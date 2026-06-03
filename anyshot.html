@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AnyShot — Screenshot to Data</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080a0e;
+    --surface: #0e1117;
+    --surface2: #141820;
+    --border: #1e2533;
+    --border2: #2a3347;
+    --accent: #e8ff47;
+    --accent2: #47c8ff;
+    --accent3: #ff6b47;
+    --text: #f0f2f7;
+    --text2: #8892a4;
+    --text3: #4a5568;
+    --success: #47ffaa;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* GRID BACKGROUND */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(232,255,71,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(232,255,71,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* NOISE OVERLAY */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* HEADER */
+  header {
+    padding: 40px 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-mark {
+    width: 36px;
+    height: 36px;
+    background: var(--accent);
+    display: grid;
+    place-items: center;
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  }
+
+  .logo-mark svg { width: 18px; height: 18px; }
+
+  .logo-text {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+
+  .logo-text span { color: var(--accent); }
+
+  .badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--accent);
+    background: rgba(232,255,71,0.08);
+    border: 1px solid rgba(232,255,71,0.2);
+    padding: 4px 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* HERO */
+  .hero {
+    padding: 60px 0 50px;
+    text-align: center;
+  }
+
+  .hero-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text3);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .hero h1 {
+    font-size: clamp(42px, 7vw, 72px);
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -3px;
+    margin-bottom: 20px;
+  }
+
+  .hero h1 .line1 { display: block; color: var(--text); }
+  .hero h1 .line2 {
+    display: block;
+    color: var(--accent);
+    -webkit-text-stroke: 0px;
+  }
+
+  .hero p {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text2);
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.8;
+  }
+
+  /* API KEY SECTION */
+  .api-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .api-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+
+  .api-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .api-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .api-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .api-input::placeholder { color: var(--text3); }
+  .api-input:focus { border-color: var(--accent); }
+
+  .api-link {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent2);
+    text-decoration: none;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+  .api-link:hover { opacity: 1; }
+
+  /* UPLOAD ZONE */
+  .upload-zone {
+    border: 1.5px dashed var(--border2);
+    background: var(--surface);
+    padding: 60px 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(232,255,71,0.03);
+  }
+
+  .upload-zone.has-image {
+    padding: 20px;
+    border-color: var(--accent);
+  }
+
+  .upload-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 20px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    display: grid;
+    place-items: center;
+    transition: all 0.25s;
+  }
+
+  .upload-zone:hover .upload-icon {
+    background: rgba(232,255,71,0.1);
+    border-color: var(--accent);
+  }
+
+  .upload-icon svg { width: 24px; height: 24px; stroke: var(--text2); }
+  .upload-zone:hover .upload-icon svg { stroke: var(--accent); }
+
+  .upload-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+    letter-spacing: -0.3px;
+  }
+
+  .upload-sub {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 1px;
+  }
+
+  .upload-sub span { color: var(--accent2); }
+
+  #fileInput { display: none; }
+
+  .preview-img {
+    max-width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+    display: none;
+    border: 1px solid var(--border2);
+  }
+
+  .preview-img.visible { display: block; margin: 0 auto; }
+
+  .preview-meta {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 12px;
+    display: none;
+  }
+  .preview-meta.visible { display: block; }
+
+  /* FORMAT SELECTOR */
+  .format-section {
+    margin-bottom: 24px;
+  }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .format-grid {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .format-btn {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 8px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .format-btn:hover { border-color: var(--text2); color: var(--text); }
+
+  .format-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+    font-weight: 700;
+  }
+
+  /* CUSTOM PROMPT */
+  .prompt-section { margin-bottom: 24px; }
+
+  .prompt-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 12px 16px;
+    outline: none;
+    resize: vertical;
+    min-height: 60px;
+    transition: border-color 0.2s;
+    line-height: 1.6;
+  }
+
+  .prompt-input::placeholder { color: var(--text3); }
+  .prompt-input:focus { border-color: var(--accent); }
+
+  /* EXTRACT BUTTON */
+  .extract-btn {
+    width: 100%;
+    padding: 18px;
+    background: var(--accent);
+    border: none;
+    color: #000;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+
+  .extract-btn:hover {
+    background: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 30px rgba(232,255,71,0.3);
+  }
+
+  .extract-btn:active { transform: translateY(0); }
+  .extract-btn:disabled {
+    background: var(--surface2);
+    color: var(--text3);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .btn-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  /* LOADING */
+  .loading-bar {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 3px;
+    background: rgba(0,0,0,0.3);
+    width: 0%;
+    transition: width 0.3s;
+    display: none;
+  }
+
+  .extract-btn.loading .loading-bar { display: block; animation: loadBar 2s ease-in-out infinite; }
+
+  @keyframes loadBar {
+    0% { width: 0%; left: 0; }
+    50% { width: 70%; left: 0; }
+    100% { width: 0%; left: 100%; }
+  }
+
+  /* SPINNER */
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(0,0,0,0.2);
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  .extract-btn.loading .spinner { display: block; }
+  .extract-btn.loading .btn-text { opacity: 0.7; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* RESULTS */
+  .results-section {
+    display: none;
+    animation: fadeUp 0.4s ease;
+  }
+
+  .results-section.visible { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-wrap: gap;
+    gap: 12px;
+  }
+
+  .results-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--success);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .results-title::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--success);
+    border-radius: 50%;
+    animation: pulse 1.5s ease infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .action-btns {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 7px 14px;
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .action-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+  .action-btn.copied { border-color: var(--success); color: var(--success); }
+
+  .result-output {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 24px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 500px;
+    overflow-y: auto;
+    position: relative;
+  }
+
+  .result-output::-webkit-scrollbar { width: 4px; }
+  .result-output::-webkit-scrollbar-track { background: transparent; }
+  .result-output::-webkit-scrollbar-thumb { background: var(--border2); }
+
+  /* TABLE RESULT */
+  .result-table-wrap {
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    max-height: 500px;
+    overflow-y: auto;
+  }
+
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  .result-table th {
+    background: var(--surface2);
+    color: var(--accent);
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-size: 10px;
+    padding: 10px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border2);
+    white-space: nowrap;
+  }
+
+  .result-table td {
+    padding: 10px 16px;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .result-table tr:hover td { background: rgba(232,255,71,0.02); }
+  .result-table tr:last-child td { border-bottom: none; }
+
+  /* ERROR */
+  .error-box {
+    background: rgba(255,107,71,0.08);
+    border: 1px solid rgba(255,107,71,0.3);
+    border-left: 3px solid var(--accent3);
+    padding: 16px 20px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent3);
+    display: none;
+    animation: fadeUp 0.3s ease;
+    margin-bottom: 16px;
+  }
+
+  .error-box.visible { display: block; }
+
+  /* STATS ROW */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    margin-top: 32px;
+    margin-bottom: 32px;
+  }
+
+  .stat-item {
+    background: var(--surface);
+    padding: 20px;
+    text-align: center;
+  }
+
+  .stat-num {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -1px;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  /* USE CASES */
+  .usecases {
+    margin-bottom: 48px;
+  }
+
+  .usecase-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .usecase-item {
+    background: var(--surface);
+    padding: 20px;
+    transition: background 0.2s;
+  }
+
+  .usecase-item:hover { background: var(--surface2); }
+
+  .usecase-icon {
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+
+  .usecase-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+    letter-spacing: -0.2px;
+  }
+
+  .usecase-desc {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text3);
+    line-height: 1.6;
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 24px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  footer p {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 1px;
+  }
+
+  footer span { color: var(--accent); }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); }
+
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+    .hero h1 { letter-spacing: -2px; }
+    .stats-row { grid-template-columns: repeat(3, 1fr); }
+    .stat-num { font-size: 22px; }
+    .results-header { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <path d="M3 9h18M9 21V9"/>
+        </svg>
+      </div>
+      <div class="logo-text">Any<span>Shot</span></div>
+    </div>
+    <div class="badge">FREE TOOL</div>
+  </header>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">// Visual Data Extraction Engine</div>
+    <h1>
+      <span class="line1">SCREENSHOT</span>
+      <span class="line2">→ DATA</span>
+    </h1>
+    <p>Upload any image — table, chart, receipt, form, whiteboard, screenshot — and extract structured data instantly. No signup. No limits. Free forever.</p>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-item">
+      <div class="stat-num">∞</div>
+      <div class="stat-label">Free Uses</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">&lt;5s</div>
+      <div class="stat-label">Avg Speed</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">6+</div>
+      <div class="stat-label">Output Formats</div>
+    </div>
+  </div>
+
+  <!-- API KEY -->
+  <div class="api-section">
+    <div class="api-label">// Gemini API Key — stored locally, never sent to our servers</div>
+    <div class="api-row">
+      <input type="password" class="api-input" id="apiKey" placeholder="Paste your Gemini API key here...">
+      <a href="https://aistudio.google.com/app/apikey" target="_blank" class="api-link">GET FREE KEY →</a>
+    </div>
+  </div>
+
+  <!-- UPLOAD ZONE -->
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="fileInput" accept="image/*">
+    <div class="upload-content" id="uploadContent">
+      <div class="upload-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <path d="M8 21h8M12 17v4"/>
+          <path d="M2 10l6-3 4 2 4-3 6 3"/>
+        </svg>
+      </div>
+      <div class="upload-title">Drop your screenshot here</div>
+      <div class="upload-sub">or click to browse — <span>JPG, PNG, WEBP, GIF</span></div>
+    </div>
+    <img class="preview-img" id="previewImg" alt="Preview">
+    <div class="preview-meta" id="previewMeta"></div>
+  </div>
+
+  <!-- FORMAT SELECTOR -->
+  <div class="format-section">
+    <div class="section-label">// Output Format</div>
+    <div class="format-grid">
+      <button class="format-btn active" data-format="table">Table</button>
+      <button class="format-btn" data-format="json">JSON</button>
+      <button class="format-btn" data-format="csv">CSV</button>
+      <button class="format-btn" data-format="list">List</button>
+      <button class="format-btn" data-format="markdown">Markdown</button>
+      <button class="format-btn" data-format="summary">Summary</button>
+    </div>
+  </div>
+
+  <!-- CUSTOM PROMPT -->
+  <div class="prompt-section">
+    <div class="section-label">// Custom Instruction (optional)</div>
+    <textarea class="prompt-input" id="customPrompt" placeholder="e.g. 'Extract only prices and product names' or 'Focus on dates and amounts' or leave blank for auto-extraction..."></textarea>
+  </div>
+
+  <!-- ERROR BOX -->
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- EXTRACT BUTTON -->
+  <button class="extract-btn" id="extractBtn" disabled>
+    <div class="btn-inner">
+      <div class="spinner"></div>
+      <span class="btn-text">EXTRACT DATA FROM IMAGE</span>
+    </div>
+    <div class="loading-bar"></div>
+  </button>
+
+  <!-- RESULTS -->
+  <div class="results-section" id="resultsSection">
+    <div class="results-header">
+      <div class="results-title">EXTRACTION COMPLETE</div>
+      <div class="action-btns">
+        <button class="action-btn" id="copyBtn">COPY</button>
+        <button class="action-btn" id="downloadBtn">DOWNLOAD</button>
+        <button class="action-btn" id="resetBtn">NEW IMAGE</button>
+      </div>
+    </div>
+    <div id="resultContainer"></div>
+  </div>
+
+  <!-- USE CASES -->
+  <div class="usecases">
+    <div class="section-label" style="margin-bottom:16px">// Works On Everything</div>
+    <div class="usecase-grid">
+      <div class="usecase-item">
+        <div class="usecase-icon">📊</div>
+        <div class="usecase-title">Data Tables</div>
+        <div class="usecase-desc">Any screenshot of a table or spreadsheet → structured data</div>
+      </div>
+      <div class="usecase-item">
+        <div class="usecase-icon">🧾</div>
+        <div class="usecase-title">Receipts</div>
+        <div class="usecase-desc">Bill or invoice photo → itemized expense list</div>
+      </div>
+      <div class="usecase-item">
+        <div class="usecase-icon">📈</div>
+        <div class="usecase-title">Charts & Graphs</div>
+        <div class="usecase-desc">Bar/line/pie chart image → raw numbers extracted</div>
+      </div>
+      <div class="usecase-item">
+        <div class="usecase-icon">📝</div>
+        <div class="usecase-title">Forms & Docs</div>
+        <div class="usecase-desc">Scanned form or document → field-by-field data</div>
+      </div>
+      <div class="usecase-item">
+        <div class="usecase-icon">🛒</div>
+        <div class="usecase-title">Product Listings</div>
+        <div class="usecase-desc">E-commerce screenshot → names, prices, specs</div>
+      </div>
+      <div class="usecase-item">
+        <div class="usecase-icon">✏️</div>
+        <div class="usecase-title">Whiteboards</div>
+        <div class="usecase-desc">Handwritten notes photo → clean typed text</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>ANYSHOT — <span>FREE</span> visual data extraction</p>
+    <p>Powered by <span>Gemini Vision</span> · No data stored · No signup</p>
+  </footer>
+
+</div>
+
+<script>
+  // State
+  let imageBase64 = null;
+  let imageMimeType = null;
+  let selectedFormat = 'table';
+  let lastRawResult = '';
+
+  // Elements
+  const uploadZone = document.getElementById('uploadZone');
+  const fileInput = document.getElementById('fileInput');
+  const previewImg = document.getElementById('previewImg');
+  const previewMeta = document.getElementById('previewMeta');
+  const uploadContent = document.getElementById('uploadContent');
+  const extractBtn = document.getElementById('extractBtn');
+  const apiKeyInput = document.getElementById('apiKey');
+  const customPrompt = document.getElementById('customPrompt');
+  const resultsSection = document.getElementById('resultsSection');
+  const resultContainer = document.getElementById('resultContainer');
+  const errorBox = document.getElementById('errorBox');
+  const copyBtn = document.getElementById('copyBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const resetBtn = document.getElementById('resetBtn');
+
+  // Load saved API key
+  const savedKey = localStorage.getItem('anyshot_gemini_key');
+  if (savedKey) apiKeyInput.value = savedKey;
+
+  apiKeyInput.addEventListener('input', () => {
+    localStorage.setItem('anyshot_gemini_key', apiKeyInput.value.trim());
+    checkReady();
+  });
+
+  // Format buttons
+  document.querySelectorAll('.format-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedFormat = btn.dataset.format;
+    });
+  });
+
+  // Upload zone click
+  uploadZone.addEventListener('click', () => fileInput.click());
+
+  // Drag and drop
+  uploadZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    uploadZone.classList.add('drag-over');
+  });
+
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) loadFile(file);
+  });
+
+  fileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (file) loadFile(file);
+  });
+
+  function loadFile(file) {
+    imageMimeType = file.type;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target.result;
+      imageBase64 = result.split(',')[1];
+
+      previewImg.src = result;
+      previewImg.classList.add('visible');
+      uploadContent.style.display = 'none';
+      uploadZone.classList.add('has-image');
+
+      const sizeKB = (file.size / 1024).toFixed(1);
+      previewMeta.textContent = `${file.name} · ${sizeKB} KB · ${file.type}`;
+      previewMeta.classList.add('visible');
+
+      checkReady();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function checkReady() {
+    const hasKey = apiKeyInput.value.trim().length > 10;
+    const hasImage = !!imageBase64;
+    extractBtn.disabled = !(hasKey && hasImage);
+  }
+
+  // Build prompt based on format
+  function buildPrompt(format, custom) {
+    const customPart = custom ? `\n\nSpecific instruction: ${custom}` : '';
+
+    const prompts = {
+      table: `Analyze this image and extract ALL data into a structured table format. Return ONLY a valid JSON array of objects, where each object represents a row. Use the column headers as keys. If there are no clear headers, create logical ones. Return ONLY the JSON array, no explanation, no markdown backticks.${customPart}`,
+
+      json: `Analyze this image and extract ALL data as structured JSON. Return a clean JSON object or array representing the data. Be comprehensive — capture every piece of information. Return ONLY valid JSON, no explanation, no markdown backticks.${customPart}`,
+
+      csv: `Analyze this image and extract ALL data in CSV format. First row should be headers. Use comma as delimiter. If values contain commas, wrap in quotes. Return ONLY the raw CSV text, no explanation.${customPart}`,
+
+      list: `Analyze this image and extract all data as a clean numbered or bulleted list. Group related items logically. Return ONLY the list text, no explanation.${customPart}`,
+
+      markdown: `Analyze this image and extract all data formatted as clean Markdown. Use tables, headers, bold, lists as appropriate. Return ONLY the Markdown text.${customPart}`,
+
+      summary: `Analyze this image and provide a comprehensive structured summary of all data present. Organize by category. Be specific with numbers, names, dates. Return a clean formatted text summary.${customPart}`
+    };
+
+    return prompts[format] || prompts.table;
+  }
+
+  // Extract
+  extractBtn.addEventListener('click', async () => {
+    const apiKey = apiKeyInput.value.trim();
+    if (!apiKey || !imageBase64) return;
+
+    // Loading state
+    extractBtn.classList.add('loading');
+    extractBtn.disabled = true;
+    extractBtn.querySelector('.btn-text').textContent = 'EXTRACTING DATA...';
+    errorBox.classList.remove('visible');
+    resultsSection.classList.remove('visible');
+
+    try {
+      const prompt = buildPrompt(selectedFormat, customPrompt.value.trim());
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: prompt },
+                {
+                  inline_data: {
+                    mime_type: imageMimeType,
+                    data: imageBase64
+                  }
+                }
+              ]
+            }],
+            generationConfig: {
+              temperature: 0.1,
+              maxOutputTokens: 4096
+            }
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error?.message || `API Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!text) throw new Error('No data extracted. Try a different image.');
+
+      lastRawResult = text;
+      renderResult(text, selectedFormat);
+      resultsSection.classList.add('visible');
+
+      // Scroll to results
+      setTimeout(() => resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      extractBtn.classList.remove('loading');
+      extractBtn.disabled = false;
+      extractBtn.querySelector('.btn-text').textContent = 'EXTRACT DATA FROM IMAGE';
+    }
+  });
+
+  function renderResult(text, format) {
+    resultContainer.innerHTML = '';
+
+    if (format === 'table') {
+      try {
+        // Clean JSON if wrapped in backticks
+        let clean = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        const parsed = JSON.parse(clean);
+
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const headers = Object.keys(parsed[0]);
+          const wrap = document.createElement('div');
+          wrap.className = 'result-table-wrap';
+
+          const table = document.createElement('table');
+          table.className = 'result-table';
+
+          const thead = document.createElement('thead');
+          const headerRow = document.createElement('tr');
+          headers.forEach(h => {
+            const th = document.createElement('th');
+            th.textContent = h;
+            headerRow.appendChild(th);
+          });
+          thead.appendChild(headerRow);
+          table.appendChild(thead);
+
+          const tbody = document.createElement('tbody');
+          parsed.forEach(row => {
+            const tr = document.createElement('tr');
+            headers.forEach(h => {
+              const td = document.createElement('td');
+              td.textContent = row[h] ?? '';
+              tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+          });
+          table.appendChild(tbody);
+          wrap.appendChild(table);
+          resultContainer.appendChild(wrap);
+          return;
+        }
+      } catch (e) {
+        // Fall through to text output
+      }
+    }
+
+    // Default: pre-formatted text
+    const pre = document.createElement('pre');
+    pre.className = 'result-output';
+    pre.textContent = text;
+    resultContainer.appendChild(pre);
+  }
+
+  function showError(msg) {
+    errorBox.textContent = '⚠ ' + msg;
+    errorBox.classList.add('visible');
+  }
+
+  // Copy
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(lastRawResult).then(() => {
+      copyBtn.textContent = 'COPIED!';
+      copyBtn.classList.add('copied');
+      setTimeout(() => {
+        copyBtn.textContent = 'COPY';
+        copyBtn.classList.remove('copied');
+      }, 2000);
+    });
+  });
+
+  // Download
+  downloadBtn.addEventListener('click', () => {
+    const ext = {
+      table: 'json', json: 'json', csv: 'csv',
+      list: 'txt', markdown: 'md', summary: 'txt'
+    }[selectedFormat] || 'txt';
+
+    const blob = new Blob([lastRawResult], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `anyshot-extract.${ext}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // Reset
+  resetBtn.addEventListener('click', () => {
+    imageBase64 = null;
+    imageMimeType = null;
+    lastRawResult = '';
+    fileInput.value = '';
+    previewImg.src = '';
+    previewImg.classList.remove('visible');
+    previewMeta.classList.remove('visible');
+    uploadContent.style.display = '';
+    uploadZone.classList.remove('has-image');
+    resultsSection.classList.remove('visible');
+    errorBox.classList.remove('visible');
+    resultContainer.innerHTML = '';
+    customPrompt.value = '';
+    checkReady();
+  });
+</script>
+</body>
+</html>
