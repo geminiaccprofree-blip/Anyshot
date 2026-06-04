@@ -3,689 +3,133 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AnyShot — Screenshot to Data</title>
+<title>AnyShot — Universal Data Extractor</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <style>
   :root {
-    --bg: #080a0e;
-    --surface: #0e1117;
-    --surface2: #141820;
-    --border: #1e2533;
-    --border2: #2a3347;
-    --accent: #e8ff47;
-    --accent2: #47c8ff;
-    --accent3: #ff6b47;
-    --text: #f0f2f7;
-    --text2: #8892a4;
-    --text3: #4a5568;
-    --success: #47ffaa;
-    --font-display: 'Syne', sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-display);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* GRID BACKGROUND */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(232,255,71,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(232,255,71,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* NOISE OVERLAY */
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 0;
-    opacity: 0.4;
-  }
-
-  .wrapper {
-    position: relative;
-    z-index: 1;
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 0 24px;
-  }
-
-  /* HEADER */
-  header {
-    padding: 40px 0 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .logo-mark {
-    width: 36px;
-    height: 36px;
-    background: var(--accent);
-    display: grid;
-    place-items: center;
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  }
-
-  .logo-mark svg { width: 18px; height: 18px; }
-
-  .logo-text {
-    font-size: 20px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    color: var(--text);
-  }
-
-  .logo-text span { color: var(--accent); }
-
-  .badge {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    font-weight: 500;
-    color: var(--accent);
-    background: rgba(232,255,71,0.08);
-    border: 1px solid rgba(232,255,71,0.2);
-    padding: 4px 10px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
-
-  /* HERO */
-  .hero {
-    padding: 60px 0 50px;
-    text-align: center;
-  }
-
-  .hero-eyebrow {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    font-weight: 400;
-    color: var(--text3);
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    margin-bottom: 20px;
-  }
-
-  .hero h1 {
-    font-size: clamp(42px, 7vw, 72px);
-    font-weight: 800;
-    line-height: 0.95;
-    letter-spacing: -3px;
-    margin-bottom: 20px;
-  }
-
-  .hero h1 .line1 { display: block; color: var(--text); }
-  .hero h1 .line2 {
-    display: block;
-    color: var(--accent);
-    -webkit-text-stroke: 0px;
-  }
-
-  .hero p {
-    font-family: var(--font-mono);
-    font-size: 13px;
-    color: var(--text2);
-    max-width: 480px;
-    margin: 0 auto;
-    line-height: 1.8;
-  }
-
-  /* API KEY SECTION */
-  .api-section {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 20px 24px;
-    margin-bottom: 24px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .api-section::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, var(--accent), transparent);
-  }
-
-  .api-label {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--text3);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 10px;
-  }
-
-  .api-row {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-  }
-
-  .api-input {
-    flex: 1;
-    background: var(--bg);
-    border: 1px solid var(--border2);
-    color: var(--text);
-    font-family: var(--font-mono);
-    font-size: 12px;
-    padding: 10px 14px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .api-input::placeholder { color: var(--text3); }
-  .api-input:focus { border-color: var(--accent); }
-
-  .api-link {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--accent2);
-    text-decoration: none;
-    letter-spacing: 1px;
-    white-space: nowrap;
-    opacity: 0.7;
-    transition: opacity 0.2s;
-  }
-  .api-link:hover { opacity: 1; }
-
-  /* UPLOAD ZONE */
-  .upload-zone {
-    border: 1.5px dashed var(--border2);
-    background: var(--surface);
-    padding: 60px 40px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.25s;
-    position: relative;
-    overflow: hidden;
-    margin-bottom: 24px;
-  }
-
-  .upload-zone:hover, .upload-zone.drag-over {
-    border-color: var(--accent);
-    background: rgba(232,255,71,0.03);
-  }
-
-  .upload-zone.has-image {
-    padding: 20px;
-    border-color: var(--accent);
-  }
-
-  .upload-icon {
-    width: 56px;
-    height: 56px;
-    margin: 0 auto 20px;
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    display: grid;
-    place-items: center;
-    transition: all 0.25s;
-  }
-
-  .upload-zone:hover .upload-icon {
-    background: rgba(232,255,71,0.1);
-    border-color: var(--accent);
-  }
-
-  .upload-icon svg { width: 24px; height: 24px; stroke: var(--text2); }
-  .upload-zone:hover .upload-icon svg { stroke: var(--accent); }
-
-  .upload-title {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: 8px;
-    letter-spacing: -0.3px;
-  }
-
-  .upload-sub {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--text3);
-    letter-spacing: 1px;
-  }
-
-  .upload-sub span { color: var(--accent2); }
-
-  #fileInput { display: none; }
-
-  .preview-img {
-    max-width: 100%;
-    max-height: 300px;
-    object-fit: contain;
-    display: none;
-    border: 1px solid var(--border2);
-  }
-
-  .preview-img.visible { display: block; margin: 0 auto; }
-
-  .preview-meta {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--text2);
-    margin-top: 12px;
-    display: none;
-  }
-  .preview-meta.visible { display: block; }
-
-  /* FORMAT SELECTOR */
-  .format-section {
-    margin-bottom: 24px;
-  }
-
-  .section-label {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--text3);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-  }
-
-  .format-grid {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .format-btn {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    padding: 8px 16px;
-    background: var(--surface);
-    border: 1px solid var(--border2);
-    color: var(--text2);
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .format-btn:hover { border-color: var(--text2); color: var(--text); }
-
-  .format-btn.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #000;
-    font-weight: 700;
-  }
-
-  /* CUSTOM PROMPT */
-  .prompt-section { margin-bottom: 24px; }
-
-  .prompt-input {
-    width: 100%;
-    background: var(--surface);
-    border: 1px solid var(--border2);
-    color: var(--text);
-    font-family: var(--font-mono);
-    font-size: 12px;
-    padding: 12px 16px;
-    outline: none;
-    resize: vertical;
-    min-height: 60px;
-    transition: border-color 0.2s;
-    line-height: 1.6;
-  }
-
-  .prompt-input::placeholder { color: var(--text3); }
-  .prompt-input:focus { border-color: var(--accent); }
-
-  /* EXTRACT BUTTON */
-  .extract-btn {
-    width: 100%;
-    padding: 18px;
-    background: var(--accent);
-    border: none;
-    color: #000;
-    font-family: var(--font-display);
-    font-size: 14px;
-    font-weight: 800;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-    overflow: hidden;
-    margin-bottom: 32px;
-  }
-
-  .extract-btn:hover {
-    background: #fff;
-    transform: translateY(-1px);
-    box-shadow: 0 8px 30px rgba(232,255,71,0.3);
-  }
-
-  .extract-btn:active { transform: translateY(0); }
-  .extract-btn:disabled {
-    background: var(--surface2);
-    color: var(--text3);
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-  }
-
-  .btn-inner {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-  }
-
-  /* LOADING */
-  .loading-bar {
-    position: absolute;
-    bottom: 0; left: 0;
-    height: 3px;
-    background: rgba(0,0,0,0.3);
-    width: 0%;
-    transition: width 0.3s;
-    display: none;
-  }
-
-  .extract-btn.loading .loading-bar { display: block; animation: loadBar 2s ease-in-out infinite; }
-
-  @keyframes loadBar {
-    0% { width: 0%; left: 0; }
-    50% { width: 70%; left: 0; }
-    100% { width: 0%; left: 100%; }
-  }
-
-  /* SPINNER */
-  .spinner {
-    width: 16px; height: 16px;
-    border: 2px solid rgba(0,0,0,0.2);
-    border-top-color: #000;
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-    display: none;
-  }
-  .extract-btn.loading .spinner { display: block; }
-  .extract-btn.loading .btn-text { opacity: 0.7; }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* RESULTS */
-  .results-section {
-    display: none;
-    animation: fadeUp 0.4s ease;
-  }
-
-  .results-section.visible { display: block; }
-
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .results-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-    flex-wrap: gap;
-    gap: 12px;
-  }
-
-  .results-title {
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--success);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .results-title::before {
-    content: '';
-    width: 6px; height: 6px;
-    background: var(--success);
-    border-radius: 50%;
-    animation: pulse 1.5s ease infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(0.8); }
-  }
-
-  .action-btns {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .action-btn {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    padding: 7px 14px;
-    background: transparent;
-    border: 1px solid var(--border2);
-    color: var(--text2);
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .action-btn:hover { border-color: var(--accent2); color: var(--accent2); }
-  .action-btn.copied { border-color: var(--success); color: var(--success); }
-
-  .result-output {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    padding: 24px;
-    font-family: var(--font-mono);
-    font-size: 12px;
-    line-height: 1.8;
-    color: var(--text);
-    white-space: pre-wrap;
-    word-break: break-word;
-    max-height: 500px;
-    overflow-y: auto;
-    position: relative;
-  }
-
-  .result-output::-webkit-scrollbar { width: 4px; }
-  .result-output::-webkit-scrollbar-track { background: transparent; }
-  .result-output::-webkit-scrollbar-thumb { background: var(--border2); }
-
-  /* TABLE RESULT */
-  .result-table-wrap {
-    overflow-x: auto;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    max-height: 500px;
-    overflow-y: auto;
-  }
-
-  .result-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: var(--font-mono);
-    font-size: 12px;
-  }
-
-  .result-table th {
-    background: var(--surface2);
-    color: var(--accent);
-    font-weight: 500;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    font-size: 10px;
-    padding: 10px 16px;
-    text-align: left;
-    border-bottom: 1px solid var(--border2);
-    white-space: nowrap;
-  }
-
-  .result-table td {
-    padding: 10px 16px;
-    color: var(--text);
-    border-bottom: 1px solid var(--border);
-    vertical-align: top;
-  }
-
-  .result-table tr:hover td { background: rgba(232,255,71,0.02); }
-  .result-table tr:last-child td { border-bottom: none; }
-
-  /* ERROR */
-  .error-box {
-    background: rgba(255,107,71,0.08);
-    border: 1px solid rgba(255,107,71,0.3);
-    border-left: 3px solid var(--accent3);
-    padding: 16px 20px;
-    font-family: var(--font-mono);
-    font-size: 12px;
-    color: var(--accent3);
-    display: none;
-    animation: fadeUp 0.3s ease;
-    margin-bottom: 16px;
-  }
-
-  .error-box.visible { display: block; }
-
-  /* STATS ROW */
-  .stats-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1px;
-    background: var(--border);
-    margin-top: 32px;
-    margin-bottom: 32px;
-  }
-
-  .stat-item {
-    background: var(--surface);
-    padding: 20px;
-    text-align: center;
-  }
-
-  .stat-num {
-    font-size: 28px;
-    font-weight: 800;
-    color: var(--accent);
-    letter-spacing: -1px;
-    line-height: 1;
-    margin-bottom: 6px;
-  }
-
-  .stat-label {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--text3);
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-  }
-
-  /* USE CASES */
-  .usecases {
-    margin-bottom: 48px;
-  }
-
-  .usecase-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1px;
-    background: var(--border);
-  }
-
-  .usecase-item {
-    background: var(--surface);
-    padding: 20px;
-    transition: background 0.2s;
-  }
-
-  .usecase-item:hover { background: var(--surface2); }
-
-  .usecase-icon {
-    font-size: 22px;
-    margin-bottom: 10px;
-  }
-
-  .usecase-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: 4px;
-    letter-spacing: -0.2px;
-  }
-
-  .usecase-desc {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--text3);
-    line-height: 1.6;
-  }
-
-  /* FOOTER */
-  footer {
-    border-top: 1px solid var(--border);
-    padding: 24px 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  footer p {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--text3);
-    letter-spacing: 1px;
-  }
-
-  footer span { color: var(--accent); }
-
-  /* SCROLLBAR */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border2); }
-
-  /* RESPONSIVE */
-  @media (max-width: 600px) {
-    .hero h1 { letter-spacing: -2px; }
-    .stats-row { grid-template-columns: repeat(3, 1fr); }
-    .stat-num { font-size: 22px; }
-    .results-header { flex-direction: column; align-items: flex-start; }
-  }
+    --bg:#080a0e;--surface:#0e1117;--surface2:#141820;--border:#1e2533;--border2:#2a3347;
+    --accent:#e8ff47;--accent2:#47c8ff;--accent3:#ff6b47;--text:#f0f2f7;--text2:#8892a4;--text3:#4a5568;--success:#47ffaa;
+    --font:'Syne',sans-serif;--mono:'JetBrains Mono',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(232,255,71,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(232,255,71,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+  .wrap{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:0 24px}
+  header{padding:36px 0 16px;display:flex;align-items:center;justify-content:space-between}
+  .logo{display:flex;align-items:center;gap:12px}
+  .logo-mark{width:34px;height:34px;background:var(--accent);display:grid;place-items:center;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)}
+  .logo-mark svg{width:16px;height:16px}
+  .logo-text{font-size:19px;font-weight:800;letter-spacing:-.5px}
+  .logo-text span{color:var(--accent)}
+  .badge{font-family:var(--mono);font-size:10px;color:var(--accent);background:rgba(232,255,71,.08);border:1px solid rgba(232,255,71,.2);padding:4px 10px;letter-spacing:2px}
+  .hero{padding:48px 0 36px;text-align:center}
+  .eyebrow{font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:3px;text-transform:uppercase;margin-bottom:16px}
+  h1{font-size:clamp(38px,7vw,66px);font-weight:800;line-height:.95;letter-spacing:-3px;margin-bottom:16px}
+  h1 .l1{display:block;color:var(--text)}
+  h1 .l2{display:block;color:var(--accent)}
+  .hero p{font-family:var(--mono);font-size:12px;color:var(--text2);max-width:480px;margin:0 auto;line-height:1.9}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);margin-bottom:28px}
+  .stat{background:var(--surface);padding:16px;text-align:center}
+  .stat-n{font-size:22px;font-weight:800;color:var(--accent);letter-spacing:-1px;line-height:1;margin-bottom:4px}
+  .stat-l{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase}
+  .card{background:var(--surface);border:1px solid var(--border);padding:18px 22px;margin-bottom:20px;position:relative;overflow:hidden}
+  .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent)}
+  .lbl{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}
+  .row{display:flex;gap:10px;align-items:center}
+  .inp{flex:1;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:12px;padding:10px 14px;outline:none;transition:border-color .2s}
+  .inp::placeholder{color:var(--text3)}
+  .inp:focus{border-color:var(--accent)}
+  .ext-link{font-family:var(--mono);font-size:10px;color:var(--accent2);text-decoration:none;letter-spacing:1px;white-space:nowrap;opacity:.8;transition:opacity .2s}
+  .ext-link:hover{opacity:1}
+  .key-status{font-family:var(--mono);font-size:10px;margin-top:8px;padding:6px 10px;display:none}
+  .key-status.ok{display:block;color:var(--success);background:rgba(71,255,170,.06);border:1px solid rgba(71,255,170,.15)}
+  .key-status.err{display:block;color:var(--accent3);background:rgba(255,107,71,.06);border:1px solid rgba(255,107,71,.2)}
+  .type-tabs{display:flex;gap:1px;background:var(--border);margin-bottom:20px}
+  .type-tab{flex:1;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;padding:12px 8px;background:var(--surface);border:none;color:var(--text3);cursor:pointer;transition:all .2s;text-align:center}
+  .type-tab:hover{background:var(--surface2);color:var(--text2)}
+  .type-tab.active{background:var(--surface2);color:var(--accent);border-bottom:2px solid var(--accent)}
+  .type-tab .tab-icon{display:block;font-size:16px;margin-bottom:4px}
+  .upload-zone{border:1.5px dashed var(--border2);background:var(--surface);padding:52px 40px;text-align:center;cursor:pointer;transition:all .25s;position:relative;margin-bottom:8px}
+  .upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:rgba(232,255,71,.02)}
+  .upload-zone.has-file{padding:20px;border-color:rgba(71,200,255,.4);cursor:default}
+  .up-icon{width:50px;height:50px;margin:0 auto 16px;background:var(--surface2);border:1px solid var(--border2);display:grid;place-items:center;transition:all .25s}
+  .upload-zone:hover .up-icon{background:rgba(232,255,71,.08);border-color:var(--accent)}
+  .up-icon svg{width:22px;height:22px;stroke:var(--text2)}
+  .upload-zone:hover .up-icon svg{stroke:var(--accent)}
+  .up-title{font-size:15px;font-weight:700;margin-bottom:6px;letter-spacing:-.2px}
+  .up-sub{font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:1px}
+  .up-sub span{color:var(--accent2)}
+  #fileInput{display:none}
+  .file-preview{display:none}
+  .file-preview.visible{display:block}
+  .img-preview{max-width:100%;max-height:260px;object-fit:contain;border:1px solid var(--border2);display:block;margin:0 auto}
+  .file-info{font-family:var(--mono);font-size:11px;color:var(--text2);margin-top:12px;display:flex;justify-content:center;align-items:center;gap:14px;flex-wrap:wrap}
+  .file-info .fname{color:var(--accent2)}
+  .file-badge{font-family:var(--mono);font-size:9px;background:var(--surface2);border:1px solid var(--border2);color:var(--text3);padding:3px 8px;letter-spacing:1px;text-transform:uppercase}
+  .change-btn{font-family:var(--mono);font-size:10px;color:var(--accent2);background:transparent;border:1px solid rgba(71,200,255,.3);padding:4px 10px;cursor:pointer;letter-spacing:1px;transition:all .2s}
+  .change-btn:hover{border-color:var(--accent2)}
+  .text-preview{background:var(--bg);border:1px solid var(--border2);padding:16px;font-family:var(--mono);font-size:11px;color:var(--text2);max-height:160px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;margin-top:12px;line-height:1.7;display:none}
+  .text-preview.visible{display:block}
+  .warn{font-family:var(--mono);font-size:10px;color:var(--accent3);margin-top:6px;text-align:center;display:none}
+  .warn.visible{display:block}
+  .fmt-section{margin-bottom:20px}
+  .fmt-grid{display:flex;gap:6px;flex-wrap:wrap}
+  .fmt-btn{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:1px;text-transform:uppercase;padding:8px 14px;background:var(--surface);border:1px solid var(--border2);color:var(--text2);cursor:pointer;transition:all .2s}
+  .fmt-btn:hover{border-color:var(--text2);color:var(--text)}
+  .fmt-btn.active{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700}
+  .prompt-inp{width:100%;background:var(--surface);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:12px;padding:12px 16px;outline:none;resize:vertical;min-height:56px;transition:border-color .2s;line-height:1.6}
+  .prompt-inp::placeholder{color:var(--text3)}
+  .prompt-inp:focus{border-color:var(--accent)}
+  .err-box{background:rgba(255,107,71,.07);border:1px solid rgba(255,107,71,.3);border-left:3px solid var(--accent3);padding:14px 18px;font-family:var(--mono);font-size:12px;color:var(--accent3);display:none;margin-bottom:16px;line-height:1.7}
+  .err-box.visible{display:block}
+  .go-btn{width:100%;padding:17px;background:var(--accent);border:none;color:#000;font-family:var(--font);font-size:13px;font-weight:800;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;margin-bottom:32px}
+  .go-btn:hover:not(:disabled){background:#fff;transform:translateY(-1px);box-shadow:0 8px 28px rgba(232,255,71,.25)}
+  .go-btn:disabled{background:var(--surface2);color:var(--text3);cursor:not-allowed}
+  .btn-inner{display:flex;align-items:center;justify-content:center;gap:10px}
+  .spinner{width:15px;height:15px;border:2px solid rgba(0,0,0,.2);border-top-color:#000;border-radius:50%;animation:spin .7s linear infinite;display:none}
+  .go-btn.loading .spinner{display:block}
+  .go-btn.loading .btn-txt{opacity:.75}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .results{display:none}
+  .results.visible{display:block;animation:fadeUp .35s ease}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  .res-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+  .res-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--success);display:flex;align-items:center;gap:8px}
+  .res-title::before{content:'';width:6px;height:6px;background:var(--success);border-radius:50%;animation:pulse 1.5s ease infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+  .act-btns{display:flex;gap:6px;flex-wrap:wrap}
+  .act-btn{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:7px 13px;background:transparent;border:1px solid var(--border2);color:var(--text2);cursor:pointer;transition:all .2s}
+  .act-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .act-btn.flash{border-color:var(--success)!important;color:var(--success)!important}
+  .result-out{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);padding:22px;font-family:var(--mono);font-size:12px;line-height:1.8;color:var(--text);white-space:pre-wrap;word-break:break-word;max-height:480px;overflow-y:auto}
+  .result-out::-webkit-scrollbar{width:4px}
+  .result-out::-webkit-scrollbar-thumb{background:var(--border2)}
+  .tbl-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);max-height:480px;overflow-y:auto}
+  .rtbl{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+  .rtbl th{background:var(--surface2);color:var(--accent);font-weight:500;letter-spacing:1px;text-transform:uppercase;font-size:10px;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border2);white-space:nowrap}
+  .rtbl td{padding:10px 14px;color:var(--text);border-bottom:1px solid var(--border);vertical-align:top}
+  .rtbl tr:hover td{background:rgba(232,255,71,.02)}
+  .rtbl tr:last-child td{border-bottom:none}
+  .parse-note{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:8px;padding:6px 10px;background:rgba(232,255,71,.04);border:1px solid rgba(232,255,71,.1)}
+  .uses{margin:36px 0 40px}
+  .use-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1px;background:var(--border)}
+  .use-item{background:var(--surface);padding:16px;transition:background .2s}
+  .use-item:hover{background:var(--surface2)}
+  .use-icon{font-size:19px;margin-bottom:7px}
+  .use-title{font-size:12px;font-weight:700;margin-bottom:3px;letter-spacing:-.2px}
+  .use-desc{font-family:var(--mono);font-size:10px;color:var(--text3);line-height:1.6}
+  footer{border-top:1px solid var(--border);padding:20px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  footer p{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px}
+  footer span{color:var(--accent)}
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-track{background:var(--bg)}
+  ::-webkit-scrollbar-thumb{background:var(--border2)}
+  @media(max-width:600px){h1{letter-spacing:-2px}.stats{grid-template-columns:repeat(2,1fr)}.type-tab .tab-lbl{display:none}}
 </style>
 </head>
 <body>
-
-<div class="wrapper">
-
-  <!-- HEADER -->
+<div class="wrap">
   <header>
     <div class="logo">
       <div class="logo-mark">
@@ -696,433 +140,540 @@
       </div>
       <div class="logo-text">Any<span>Shot</span></div>
     </div>
-    <div class="badge">FREE TOOL</div>
+    <div class="badge">FREE · NO SIGNUP</div>
   </header>
 
-  <!-- HERO -->
   <div class="hero">
-    <div class="hero-eyebrow">// Visual Data Extraction Engine</div>
-    <h1>
-      <span class="line1">SCREENSHOT</span>
-      <span class="line2">→ DATA</span>
-    </h1>
-    <p>Upload any image — table, chart, receipt, form, whiteboard, screenshot — and extract structured data instantly. No signup. No limits. Free forever.</p>
+    <div class="eyebrow">// Universal Data Extraction Engine</div>
+    <h1><span class="l1">ANY FILE</span><span class="l2">→ DATA</span></h1>
+    <p>Images, PDFs, Word docs, PowerPoints, text files — extract structured data from anything. Free forever.</p>
   </div>
 
-  <!-- STATS -->
-  <div class="stats-row">
-    <div class="stat-item">
-      <div class="stat-num">∞</div>
-      <div class="stat-label">Free Uses</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-num">&lt;5s</div>
-      <div class="stat-label">Avg Speed</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-num">6+</div>
-      <div class="stat-label">Output Formats</div>
-    </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-n">∞</div><div class="stat-l">Free Uses</div></div>
+    <div class="stat"><div class="stat-n">8+</div><div class="stat-l">File Types</div></div>
+    <div class="stat"><div class="stat-n">6</div><div class="stat-l">Formats Out</div></div>
+    <div class="stat"><div class="stat-n">&lt;5s</div><div class="stat-l">Avg Speed</div></div>
   </div>
 
-  <!-- API KEY -->
-  <div class="api-section">
-    <div class="api-label">// Gemini API Key — stored locally, never sent to our servers</div>
-    <div class="api-row">
-      <input type="password" class="api-input" id="apiKey" placeholder="Paste your Gemini API key here...">
-      <a href="https://aistudio.google.com/app/apikey" target="_blank" class="api-link">GET FREE KEY →</a>
+  <div class="card">
+    <div class="lbl">// Gemini API Key — stored in your browser only</div>
+    <div class="row">
+      <input type="password" class="inp" id="apiKey" placeholder="Paste your free Gemini API key...">
+      <a href="https://aistudio.google.com/app/apikey" target="_blank" class="ext-link">GET FREE KEY →</a>
     </div>
+    <div class="key-status" id="keyStatus"></div>
   </div>
 
-  <!-- UPLOAD ZONE -->
+  <div class="type-tabs" id="typeTabs">
+    <button class="type-tab active" data-type="image">
+      <span class="tab-icon">🖼️</span>
+      <span class="tab-lbl">Image</span>
+    </button>
+    <button class="type-tab" data-type="pdf">
+      <span class="tab-icon">📄</span>
+      <span class="tab-lbl">PDF</span>
+    </button>
+    <button class="type-tab" data-type="docx">
+      <span class="tab-icon">📝</span>
+      <span class="tab-lbl">Word</span>
+    </button>
+    <button class="type-tab" data-type="pptx">
+      <span class="tab-icon">📊</span>
+      <span class="tab-lbl">PowerPoint</span>
+    </button>
+    <button class="type-tab" data-type="text">
+      <span class="tab-icon">📋</span>
+      <span class="tab-lbl">Text/MD</span>
+    </button>
+  </div>
+
   <div class="upload-zone" id="uploadZone">
-    <input type="file" id="fileInput" accept="image/*">
-    <div class="upload-content" id="uploadContent">
-      <div class="upload-icon">
+    <input type="file" id="fileInput">
+    <div id="uploadPlaceholder">
+      <div class="up-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="3" width="20" height="14" rx="2"/>
-          <path d="M8 21h8M12 17v4"/>
-          <path d="M2 10l6-3 4 2 4-3 6 3"/>
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
         </svg>
       </div>
-      <div class="upload-title">Drop your screenshot here</div>
-      <div class="upload-sub">or click to browse — <span>JPG, PNG, WEBP, GIF</span></div>
+      <div class="up-title" id="upTitle">Drop your file here</div>
+      <div class="up-sub" id="upSub">or click to browse — <span id="upTypes">PNG, JPG, WEBP, GIF</span></div>
     </div>
-    <img class="preview-img" id="previewImg" alt="Preview">
-    <div class="preview-meta" id="previewMeta"></div>
-  </div>
-
-  <!-- FORMAT SELECTOR -->
-  <div class="format-section">
-    <div class="section-label">// Output Format</div>
-    <div class="format-grid">
-      <button class="format-btn active" data-format="table">Table</button>
-      <button class="format-btn" data-format="json">JSON</button>
-      <button class="format-btn" data-format="csv">CSV</button>
-      <button class="format-btn" data-format="list">List</button>
-      <button class="format-btn" data-format="markdown">Markdown</button>
-      <button class="format-btn" data-format="summary">Summary</button>
+    <div class="file-preview" id="filePreview">
+      <img class="img-preview" id="imgPreview" alt="">
+      <div class="text-preview" id="textPreview"></div>
+      <div class="file-info" id="fileInfo"></div>
     </div>
   </div>
+  <div class="warn" id="sizeWarn">⚠ Large file — extraction may take longer.</div>
 
-  <!-- CUSTOM PROMPT -->
-  <div class="prompt-section">
-    <div class="section-label">// Custom Instruction (optional)</div>
-    <textarea class="prompt-input" id="customPrompt" placeholder="e.g. 'Extract only prices and product names' or 'Focus on dates and amounts' or leave blank for auto-extraction..."></textarea>
+  <div class="fmt-section" style="margin-top:20px">
+    <div class="lbl">// Output Format</div>
+    <div class="fmt-grid">
+      <button class="fmt-btn active" data-fmt="table">Table</button>
+      <button class="fmt-btn" data-fmt="json">JSON</button>
+      <button class="fmt-btn" data-fmt="csv">CSV</button>
+      <button class="fmt-btn" data-fmt="list">List</button>
+      <button class="fmt-btn" data-fmt="markdown">Markdown</button>
+      <button class="fmt-btn" data-fmt="summary">Summary</button>
+    </div>
   </div>
 
-  <!-- ERROR BOX -->
-  <div class="error-box" id="errorBox"></div>
+  <div style="margin-bottom:20px">
+    <div class="lbl" style="margin-bottom:10px">// Custom Instruction (optional)</div>
+    <textarea class="prompt-inp" id="customPrompt" placeholder="e.g. 'Extract only prices and names' or leave blank for auto..."></textarea>
+  </div>
 
-  <!-- EXTRACT BUTTON -->
-  <button class="extract-btn" id="extractBtn" disabled>
+  <div class="err-box" id="errBox"></div>
+
+  <button class="go-btn" id="goBtn" disabled>
     <div class="btn-inner">
       <div class="spinner"></div>
-      <span class="btn-text">EXTRACT DATA FROM IMAGE</span>
+      <span class="btn-txt">EXTRACT DATA</span>
     </div>
-    <div class="loading-bar"></div>
   </button>
 
-  <!-- RESULTS -->
-  <div class="results-section" id="resultsSection">
-    <div class="results-header">
-      <div class="results-title">EXTRACTION COMPLETE</div>
-      <div class="action-btns">
-        <button class="action-btn" id="copyBtn">COPY</button>
-        <button class="action-btn" id="downloadBtn">DOWNLOAD</button>
-        <button class="action-btn" id="resetBtn">NEW IMAGE</button>
+  <div class="results" id="results">
+    <div class="res-header">
+      <div class="res-title">EXTRACTION COMPLETE</div>
+      <div class="act-btns">
+        <button class="act-btn" id="copyBtn">COPY</button>
+        <button class="act-btn" id="dlBtn">DOWNLOAD</button>
+        <button class="act-btn" id="newBtn">NEW FILE</button>
       </div>
     </div>
-    <div id="resultContainer"></div>
+    <div id="resultBox"></div>
   </div>
 
-  <!-- USE CASES -->
-  <div class="usecases">
-    <div class="section-label" style="margin-bottom:16px">// Works On Everything</div>
-    <div class="usecase-grid">
-      <div class="usecase-item">
-        <div class="usecase-icon">📊</div>
-        <div class="usecase-title">Data Tables</div>
-        <div class="usecase-desc">Any screenshot of a table or spreadsheet → structured data</div>
-      </div>
-      <div class="usecase-item">
-        <div class="usecase-icon">🧾</div>
-        <div class="usecase-title">Receipts</div>
-        <div class="usecase-desc">Bill or invoice photo → itemized expense list</div>
-      </div>
-      <div class="usecase-item">
-        <div class="usecase-icon">📈</div>
-        <div class="usecase-title">Charts & Graphs</div>
-        <div class="usecase-desc">Bar/line/pie chart image → raw numbers extracted</div>
-      </div>
-      <div class="usecase-item">
-        <div class="usecase-icon">📝</div>
-        <div class="usecase-title">Forms & Docs</div>
-        <div class="usecase-desc">Scanned form or document → field-by-field data</div>
-      </div>
-      <div class="usecase-item">
-        <div class="usecase-icon">🛒</div>
-        <div class="usecase-title">Product Listings</div>
-        <div class="usecase-desc">E-commerce screenshot → names, prices, specs</div>
-      </div>
-      <div class="usecase-item">
-        <div class="usecase-icon">✏️</div>
-        <div class="usecase-title">Whiteboards</div>
-        <div class="usecase-desc">Handwritten notes photo → clean typed text</div>
-      </div>
+  <div class="uses">
+    <div class="lbl" style="margin-bottom:14px">// Works On Everything</div>
+    <div class="use-grid">
+      <div class="use-item"><div class="use-icon">🖼️</div><div class="use-title">Screenshots</div><div class="use-desc">Any image with data</div></div>
+      <div class="use-item"><div class="use-icon">📄</div><div class="use-title">PDF Reports</div><div class="use-desc">Invoices, statements, papers</div></div>
+      <div class="use-item"><div class="use-icon">📝</div><div class="use-title">Word Docs</div><div class="use-desc">.docx files</div></div>
+      <div class="use-item"><div class="use-icon">📊</div><div class="use-title">PowerPoint</div><div class="use-desc">Slide text and data</div></div>
+      <div class="use-item"><div class="use-icon">📋</div><div class="use-title">Text & Markdown</div><div class="use-desc">.txt, .md files</div></div>
+      <div class="use-item"><div class="use-icon">🧾</div><div class="use-title">Forms & Receipts</div><div class="use-desc">Scanned documents</div></div>
     </div>
   </div>
 
-  <!-- FOOTER -->
   <footer>
-    <p>ANYSHOT — <span>FREE</span> visual data extraction</p>
-    <p>Powered by <span>Gemini Vision</span> · No data stored · No signup</p>
+    <p>ANYSHOT — <span>FREE</span> universal data extraction</p>
+    <p>Powered by <span>Gemini</span> · No data stored · No signup</p>
   </footer>
-
 </div>
 
 <script>
-  // State
-  let imageBase64 = null;
-  let imageMimeType = null;
-  let selectedFormat = 'table';
-  let lastRawResult = '';
+let fileData = null;
+let fileText = null;
+let fileMime = null;
+let fileType = 'image';
+let fileName = '';
+let selectedFmt = 'table';
+let lastRaw = '';
 
-  // Elements
-  const uploadZone = document.getElementById('uploadZone');
-  const fileInput = document.getElementById('fileInput');
-  const previewImg = document.getElementById('previewImg');
-  const previewMeta = document.getElementById('previewMeta');
-  const uploadContent = document.getElementById('uploadContent');
-  const extractBtn = document.getElementById('extractBtn');
-  const apiKeyInput = document.getElementById('apiKey');
-  const customPrompt = document.getElementById('customPrompt');
-  const resultsSection = document.getElementById('resultsSection');
-  const resultContainer = document.getElementById('resultContainer');
-  const errorBox = document.getElementById('errorBox');
-  const copyBtn = document.getElementById('copyBtn');
-  const downloadBtn = document.getElementById('downloadBtn');
-  const resetBtn = document.getElementById('resetBtn');
+const ACCEPT = {
+  image: 'image/png,image/jpeg,image/webp,image/gif,image/bmp',
+  pdf: 'application/pdf',
+  docx: '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  pptx: '.pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  text: '.txt,.md,text/plain,text/markdown'
+};
 
-  // Load saved API key
-  const savedKey = localStorage.getItem('anyshot_gemini_key');
-  if (savedKey) apiKeyInput.value = savedKey;
+const LABELS = {
+  image: 'PNG, JPG, WEBP, GIF',
+  pdf: 'PDF files',
+  docx: 'DOCX (Word) files',
+  pptx: 'PPTX (PowerPoint) files',
+  text: 'TXT, MD files'
+};
 
-  apiKeyInput.addEventListener('input', () => {
-    localStorage.setItem('anyshot_gemini_key', apiKeyInput.value.trim());
-    checkReady();
+const apiKeyEl = document.getElementById('apiKey');
+const keyStatus = document.getElementById('keyStatus');
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+const upPlaceholder = document.getElementById('uploadPlaceholder');
+const upTitle = document.getElementById('upTitle');
+const upSub = document.getElementById('upSub');
+const upTypes = document.getElementById('upTypes');
+const filePreview = document.getElementById('filePreview');
+const imgPreview = document.getElementById('imgPreview');
+const textPreview = document.getElementById('textPreview');
+const fileInfo = document.getElementById('fileInfo');
+const sizeWarn = document.getElementById('sizeWarn');
+const goBtn = document.getElementById('goBtn');
+const errBox = document.getElementById('errBox');
+const results = document.getElementById('results');
+const resultBox = document.getElementById('resultBox');
+const copyBtn = document.getElementById('copyBtn');
+const dlBtn = document.getElementById('dlBtn');
+const newBtn = document.getElementById('newBtn');
+
+const savedKey = localStorage.getItem('anyshot_key');
+if (savedKey) { apiKeyEl.value = savedKey; checkKey(savedKey); }
+
+apiKeyEl.addEventListener('input', () => {
+  const k = apiKeyEl.value.trim();
+  localStorage.setItem('anyshot_key', k);
+  checkKey(k);
+  checkReady();
+});
+
+function checkKey(k) {
+  if (!k) { keyStatus.className = 'key-status'; return; }
+  if (k.startsWith('AIza') && k.length > 30) {
+    keyStatus.className = 'key-status ok';
+    keyStatus.textContent = '✓ Key format valid';
+  } else {
+    keyStatus.className = 'key-status err';
+    keyStatus.textContent = '⚠ Key should start with "AIza..."';
+  }
+}
+
+document.querySelectorAll('.type-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    fileType = tab.dataset.type;
+    fileInput.accept = ACCEPT[fileType];
+    upTypes.textContent = LABELS[fileType];
+    resetFile();
   });
+});
 
-  // Format buttons
-  document.querySelectorAll('.format-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      selectedFormat = btn.dataset.format;
-    });
+fileInput.accept = ACCEPT['image'];
+
+document.querySelectorAll('.fmt-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedFmt = btn.dataset.fmt;
   });
+});
 
-  // Upload zone click
-  uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('click', () => { if (!fileData && !fileText) fileInput.click(); });
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); if (!fileData && !fileText) uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('drag-over');
+  if (fileData || fileText) return;
+  const f = e.dataTransfer.files[0];
+  if (f) handleFile(f);
+});
 
-  // Drag and drop
-  uploadZone.addEventListener('dragover', e => {
-    e.preventDefault();
-    uploadZone.classList.add('drag-over');
-  });
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
 
-  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+async function handleFile(file) {
+  fileName = file.name;
+  fileMime = file.type;
+  sizeWarn.classList.toggle('visible', file.size > 4 * 1024 * 1024);
+  errBox.classList.remove('visible');
 
-  uploadZone.addEventListener('drop', e => {
-    e.preventDefault();
-    uploadZone.classList.remove('drag-over');
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) loadFile(file);
-  });
+  const ext = file.name.split('.').pop().toLowerCase();
 
-  fileInput.addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (file) loadFile(file);
-  });
-
-  function loadFile(file) {
-    imageMimeType = file.type;
+  if (fileType === 'image' || file.type.startsWith('image/')) {
     const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target.result;
-      imageBase64 = result.split(',')[1];
-
-      previewImg.src = result;
-      previewImg.classList.add('visible');
-      uploadContent.style.display = 'none';
-      uploadZone.classList.add('has-image');
-
-      const sizeKB = (file.size / 1024).toFixed(1);
-      previewMeta.textContent = `${file.name} · ${sizeKB} KB · ${file.type}`;
-      previewMeta.classList.add('visible');
-
-      checkReady();
+    reader.onload = e => {
+      const dataUrl = e.target.result;
+      fileData = dataUrl.split(',')[1];
+      fileMime = file.type;
+      imgPreview.src = dataUrl;
+      imgPreview.style.display = 'block';
+      textPreview.classList.remove('visible');
+      showFileInfo(file);
     };
     reader.readAsDataURL(file);
+    return;
   }
 
-  function checkReady() {
-    const hasKey = apiKeyInput.value.trim().length > 10;
-    const hasImage = !!imageBase64;
-    extractBtn.disabled = !(hasKey && hasImage);
+  if (fileType === 'pdf' || file.type === 'application/pdf') {
+    const reader = new FileReader();
+    reader.onload = e => {
+      fileData = e.target.result.split(',')[1];
+      fileMime = 'application/pdf';
+      imgPreview.style.display = 'none';
+      textPreview.classList.remove('visible');
+      textPreview.textContent = '';
+      showFileInfo(file, '📄 PDF loaded');
+    };
+    reader.readAsDataURL(file);
+    return;
   }
 
-  // Build prompt based on format
-  function buildPrompt(format, custom) {
-    const customPart = custom ? `\n\nSpecific instruction: ${custom}` : '';
+  if (ext === 'docx') {
+    const arrayBuf = await file.arrayBuffer();
+    try {
+      const result = await mammoth.extractRawText({ arrayBuffer: arrayBuf });
+      fileText = result.value;
+      fileMime = 'text/plain';
+      imgPreview.style.display = 'none';
+      textPreview.textContent = fileText.slice(0, 800) + (fileText.length > 800 ? '\n...' : '');
+      textPreview.classList.add('visible');
+      showFileInfo(file, `📝 ${fileText.split(/\s+/).length} words`);
+    } catch(e) {
+      showError('Could not read DOCX.');
+      return;
+    }
+    return;
+  }
 
-    const prompts = {
-      table: `Analyze this image and extract ALL data into a structured table format. Return ONLY a valid JSON array of objects, where each object represents a row. Use the column headers as keys. If there are no clear headers, create logical ones. Return ONLY the JSON array, no explanation, no markdown backticks.${customPart}`,
+  if (ext === 'pptx') {
+    try {
+      const text = await extractPptxText(file);
+      fileText = text;
+      fileMime = 'text/plain';
+      imgPreview.style.display = 'none';
+      textPreview.textContent = fileText.slice(0, 800) + (fileText.length > 800 ? '\n...' : '');
+      textPreview.classList.add('visible');
+      showFileInfo(file, '📊 PPTX extracted');
+    } catch(e) {
+      showError('Could not read PPTX: ' + e.message);
+      return;
+    }
+    return;
+  }
 
-      json: `Analyze this image and extract ALL data as structured JSON. Return a clean JSON object or array representing the data. Be comprehensive — capture every piece of information. Return ONLY valid JSON, no explanation, no markdown backticks.${customPart}`,
+  if (ext === 'txt' || ext === 'md' || file.type === 'text/plain' || file.type === 'text/markdown') {
+    const reader = new FileReader();
+    reader.onload = e => {
+      fileText = e.target.result;
+      fileMime = 'text/plain';
+      imgPreview.style.display = 'none';
+      textPreview.textContent = fileText.slice(0, 800) + (fileText.length > 800 ? '\n...' : '');
+      textPreview.classList.add('visible');
+      showFileInfo(file, `📋 ${fileText.split(/\s+/).length} words`);
+    };
+    reader.readAsText(file);
+    return;
+  }
 
-      csv: `Analyze this image and extract ALL data in CSV format. First row should be headers. Use comma as delimiter. If values contain commas, wrap in quotes. Return ONLY the raw CSV text, no explanation.${customPart}`,
+  showError('Unsupported file type.');
+}
 
-      list: `Analyze this image and extract all data as a clean numbered or bulleted list. Group related items logically. Return ONLY the list text, no explanation.${customPart}`,
+async function extractPptxText(file) {
+  const buf = await file.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  const slides = [];
+  let i = 0;
+  while (i < bytes.length - 4) {
+    if (bytes[i]===0x50 && bytes[i+1]===0x4B && bytes[i+2]===0x03 && bytes[i+3]===0x04) {
+      const compMethod = bytes[i+8] | (bytes[i+9]<<8);
+      const compSize = bytes[i+18] | (bytes[i+19]<<8) | (bytes[i+20]<<16) | (bytes[i+21]<<24);
+      const nameLen = bytes[i+26] | (bytes[i+27]<<8);
+      const extraLen = bytes[i+28] | (bytes[i+29]<<8);
+      const name = new TextDecoder().decode(bytes.slice(i+30, i+30+nameLen));
+      const dataStart = i + 30 + nameLen + extraLen;
+      if (name.match(/^ppt\/slides\/slide\d+\.xml$/) && compMethod === 0) {
+        const xmlBytes = bytes.slice(dataStart, dataStart + compSize);
+        const xml = new TextDecoder().decode(xmlBytes);
+        const matches = xml.match(/<a:t[^>]*>([^<]*)<\/a:t>/g) || [];
+        const slideText = matches.map(m => m.replace(/<[^>]+>/g, '')).filter(Boolean).join(' ');
+        if (slideText.trim()) slides.push(`[Slide ${slides.length+1}]\n${slideText}`);
+      }
+      i = dataStart + compSize;
+    } else {
+      i++;
+    }
+  }
+  if (slides.length === 0) throw new Error('No text found in PPTX.');
+  return slides.join('\n\n');
+}
 
-      markdown: `Analyze this image and extract all data formatted as clean Markdown. Use tables, headers, bold, lists as appropriate. Return ONLY the Markdown text.${customPart}`,
+function showFileInfo(file, note) {
+  const size = file.size > 1024*1024 ? (file.size/1024/1024).toFixed(1)+' MB' : (file.size/1024).toFixed(0)+' KB';
+  fileInfo.innerHTML = `
+    <span class="fname">${file.name}</span>
+    <span class="file-badge">${size}</span>
+    ${note ? `<span style="color:var(--success);font-size:10px">${note}</span>` : ''}
+    <button class="change-btn" onclick="triggerChange()">CHANGE FILE</button>
+  `;
+  upPlaceholder.style.display = 'none';
+  filePreview.classList.add('visible');
+  uploadZone.classList.add('has-file');
+  checkReady();
+}
 
-      summary: `Analyze this image and provide a comprehensive structured summary of all data present. Organize by category. Be specific with numbers, names, dates. Return a clean formatted text summary.${customPart}`
+window.triggerChange = function() {
+  resetFile();
+  setTimeout(() => fileInput.click(), 50);
+};
+
+function resetFile() {
+  fileData = null; fileText = null; fileMime = null; fileName = '';
+  fileInput.value = '';
+  imgPreview.src = ''; imgPreview.style.display = 'none';
+  textPreview.textContent = ''; textPreview.classList.remove('visible');
+  filePreview.classList.remove('visible');
+  upPlaceholder.style.display = '';
+  uploadZone.classList.remove('has-file','drag-over');
+  sizeWarn.classList.remove('visible');
+  results.classList.remove('visible');
+  errBox.classList.remove('visible');
+  resultBox.innerHTML = '';
+  checkReady();
+}
+
+function checkReady() {
+  const key = apiKeyEl.value.trim();
+  goBtn.disabled = !(key.length > 20 && (fileData || fileText));
+}
+
+function buildPrompt(fmt, custom, isTextFile) {
+  const extra = custom ? `\n\nAdditional instruction: ${custom}` : '';
+  const base = {
+    table: `Extract ALL data from this ${isTextFile?'document':'image'} into a JSON array of objects. Use headers as keys. Return ONLY raw JSON array, no markdown, no backticks.${extra}`,
+    json: `Extract ALL data as a structured JSON object or array. Return ONLY valid JSON, no markdown.${extra}`,
+    csv: `Extract ALL data as CSV. First row = headers. Comma-delimited. Return ONLY raw CSV text.${extra}`,
+    list: `Extract all information as an organized list. Return ONLY the list.${extra}`,
+    markdown: `Extract all data as clean Markdown. Use headers, tables, lists. Return ONLY Markdown.${extra}`,
+    summary: `Summarize everything in this ${isTextFile?'document':'image'}. Organize by category. Include all numbers and dates.${extra}`
+  };
+  return base[fmt] || base.table;
+}
+
+goBtn.addEventListener('click', async () => {
+  const apiKey = apiKeyEl.value.trim();
+  if (!apiKey || (!fileData && !fileText)) return;
+
+  goBtn.classList.add('loading');
+  goBtn.disabled = true;
+  goBtn.querySelector('.btn-txt').textContent = 'EXTRACTING...';
+  errBox.classList.remove('visible');
+  results.classList.remove('visible');
+  resultBox.innerHTML = '';
+
+  try {
+    const prompt = buildPrompt(selectedFmt, document.getElementById('customPrompt').value.trim(), !!fileText);
+    let parts = [];
+
+    if (fileText) {
+      const MAX_CHARS = 30000;
+      const truncated = fileText.length > MAX_CHARS;
+      const content = truncated ? fileText.slice(0, MAX_CHARS) + '\n\n[...truncated...]' : fileText;
+      parts = [{ text: prompt + '\n\n---\nCONTENT:\n' + content }];
+    } else {
+      parts = [
+        { text: prompt },
+        { inline_data: { mime_type: fileMime, data: fileData } }
+      ];
+    }
+
+    const payload = {
+      contents: [{ parts }],
+      generationConfig: { temperature: 0.1, maxOutputTokens: 8192 }
     };
 
-    return prompts[format] || prompts.table;
+    const res = await fetch(
+      'https://cors-anywhere.herokuapp.com/https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey
+        },
+        body: JSON.stringify(payload)
+      }
+    );
+
+    if (!res.ok) {
+      let msg = `API error ${res.status}`;
+      try { const e = await res.json(); msg = e?.error?.message || msg; } catch(_) {}
+      throw new Error(msg);
+    }
+
+    const data = await res.json();
+    const candidate = data.candidates?.[0];
+    if (!candidate) throw new Error(data.promptFeedback?.blockReason ? `Blocked: ${data.promptFeedback.blockReason}` : 'No response. Try again.');
+    if (candidate.finishReason === 'SAFETY') throw new Error('Content blocked by safety filters.');
+    const text = candidate.content?.parts?.[0]?.text;
+    if (!text?.trim()) throw new Error('Empty response. Try a different file.');
+
+    lastRaw = text;
+    renderResult(text, selectedFmt);
+    results.classList.add('visible');
+    setTimeout(() => results.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+
+  } catch(e) {
+    showError(e.message);
+  } finally {
+    goBtn.classList.remove('loading');
+    goBtn.disabled = false;
+    goBtn.querySelector('.btn-txt').textContent = 'EXTRACT DATA';
   }
+});
 
-  // Extract
-  extractBtn.addEventListener('click', async () => {
-    const apiKey = apiKeyInput.value.trim();
-    if (!apiKey || !imageBase64) return;
-
-    // Loading state
-    extractBtn.classList.add('loading');
-    extractBtn.disabled = true;
-    extractBtn.querySelector('.btn-text').textContent = 'EXTRACTING DATA...';
-    errorBox.classList.remove('visible');
-    resultsSection.classList.remove('visible');
-
+function renderResult(text, fmt) {
+  resultBox.innerHTML = '';
+  if (fmt === 'table' || fmt === 'json') {
+    let clean = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
     try {
-      const prompt = buildPrompt(selectedFormat, customPrompt.value.trim());
-
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                { text: prompt },
-                {
-                  inline_data: {
-                    mime_type: imageMimeType,
-                    data: imageBase64
-                  }
-                }
-              ]
-            }],
-            generationConfig: {
-              temperature: 0.1,
-              maxOutputTokens: 4096
-            }
-          })
-        }
-      );
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error?.message || `API Error: ${response.status}`);
+      const parsed = JSON.parse(clean);
+      if (fmt === 'table' && Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'object') {
+        renderTable(parsed); return;
       }
-
-      const data = await response.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-      if (!text) throw new Error('No data extracted. Try a different image.');
-
-      lastRawResult = text;
-      renderResult(text, selectedFormat);
-      resultsSection.classList.add('visible');
-
-      // Scroll to results
-      setTimeout(() => resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-
-    } catch (err) {
-      showError(err.message);
-    } finally {
-      extractBtn.classList.remove('loading');
-      extractBtn.disabled = false;
-      extractBtn.querySelector('.btn-text').textContent = 'EXTRACT DATA FROM IMAGE';
+      const pre = document.createElement('pre');
+      pre.className = 'result-out';
+      pre.textContent = JSON.stringify(parsed, null, 2);
+      resultBox.appendChild(pre);
+      return;
+    } catch(_) {
+      const note = document.createElement('div');
+      note.className = 'parse-note';
+      note.textContent = '// Could not parse as JSON — showing raw text.';
+      resultBox.appendChild(note);
     }
-  });
-
-  function renderResult(text, format) {
-    resultContainer.innerHTML = '';
-
-    if (format === 'table') {
-      try {
-        // Clean JSON if wrapped in backticks
-        let clean = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-        const parsed = JSON.parse(clean);
-
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const headers = Object.keys(parsed[0]);
-          const wrap = document.createElement('div');
-          wrap.className = 'result-table-wrap';
-
-          const table = document.createElement('table');
-          table.className = 'result-table';
-
-          const thead = document.createElement('thead');
-          const headerRow = document.createElement('tr');
-          headers.forEach(h => {
-            const th = document.createElement('th');
-            th.textContent = h;
-            headerRow.appendChild(th);
-          });
-          thead.appendChild(headerRow);
-          table.appendChild(thead);
-
-          const tbody = document.createElement('tbody');
-          parsed.forEach(row => {
-            const tr = document.createElement('tr');
-            headers.forEach(h => {
-              const td = document.createElement('td');
-              td.textContent = row[h] ?? '';
-              tr.appendChild(td);
-            });
-            tbody.appendChild(tr);
-          });
-          table.appendChild(tbody);
-          wrap.appendChild(table);
-          resultContainer.appendChild(wrap);
-          return;
-        }
-      } catch (e) {
-        // Fall through to text output
-      }
-    }
-
-    // Default: pre-formatted text
-    const pre = document.createElement('pre');
-    pre.className = 'result-output';
-    pre.textContent = text;
-    resultContainer.appendChild(pre);
   }
+  const pre = document.createElement('pre');
+  pre.className = 'result-out';
+  pre.textContent = text;
+  resultBox.appendChild(pre);
+}
 
-  function showError(msg) {
-    errorBox.textContent = '⚠ ' + msg;
-    errorBox.classList.add('visible');
+function renderTable(rows) {
+  const headers = [...new Set(rows.flatMap(r => Object.keys(r)))];
+  const wrap = document.createElement('div'); wrap.className = 'tbl-wrap';
+  const tbl = document.createElement('table'); tbl.className = 'rtbl';
+  const thead = tbl.createTHead(); const hr = thead.insertRow();
+  headers.forEach(h => { const th = document.createElement('th'); th.textContent = h; hr.appendChild(th); });
+  const tbody = tbl.createTBody();
+  rows.forEach(row => {
+    const tr = tbody.insertRow();
+    headers.forEach(h => { const td = tr.insertCell(); td.textContent = row[h] ?? ''; });
+  });
+  wrap.appendChild(tbl); resultBox.appendChild(wrap);
+}
+
+function showError(msg) {
+  errBox.textContent = '⚠ ' + msg;
+  errBox.classList.add('visible');
+}
+
+copyBtn.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(lastRaw);
+  } catch(_) {
+    const ta = document.createElement('textarea');
+    ta.value = lastRaw; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
   }
+  copyBtn.textContent = 'COPIED!'; copyBtn.classList.add('flash');
+  setTimeout(() => { copyBtn.textContent = 'COPY'; copyBtn.classList.remove('flash'); }, 2000);
+});
 
-  // Copy
-  copyBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(lastRawResult).then(() => {
-      copyBtn.textContent = 'COPIED!';
-      copyBtn.classList.add('copied');
-      setTimeout(() => {
-        copyBtn.textContent = 'COPY';
-        copyBtn.classList.remove('copied');
-      }, 2000);
-    });
-  });
+dlBtn.addEventListener('click', () => {
+  const ext = {table:'json',json:'json',csv:'csv',list:'txt',markdown:'md',summary:'txt'}[selectedFmt]||'txt';
+  const blob = new Blob([lastRaw], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `anyshot-extract.${ext}`; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
 
-  // Download
-  downloadBtn.addEventListener('click', () => {
-    const ext = {
-      table: 'json', json: 'json', csv: 'csv',
-      list: 'txt', markdown: 'md', summary: 'txt'
-    }[selectedFormat] || 'txt';
-
-    const blob = new Blob([lastRawResult], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `anyshot-extract.${ext}`;
-    a.click();
-    URL.revokeObjectURL(url);
-  });
-
-  // Reset
-  resetBtn.addEventListener('click', () => {
-    imageBase64 = null;
-    imageMimeType = null;
-    lastRawResult = '';
-    fileInput.value = '';
-    previewImg.src = '';
-    previewImg.classList.remove('visible');
-    previewMeta.classList.remove('visible');
-    uploadContent.style.display = '';
-    uploadZone.classList.remove('has-image');
-    resultsSection.classList.remove('visible');
-    errorBox.classList.remove('visible');
-    resultContainer.innerHTML = '';
-    customPrompt.value = '';
-    checkReady();
-  });
+newBtn.addEventListener('click', () => {
+  resetFile();
+  document.getElementById('customPrompt').value = '';
+  lastRaw = '';
+});
 </script>
 </body>
 </html>
