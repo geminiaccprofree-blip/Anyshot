@@ -321,12 +321,12 @@ apiKeyEl.addEventListener('input', () => {
 
 function checkKey(k) {
   if (!k) { keyStatus.className = 'key-status'; return; }
-  if (k.startsWith('AIza') && k.length > 30) {
+  if (k.length > 20) {
     keyStatus.className = 'key-status ok';
-    keyStatus.textContent = '✓ Key format valid';
+    keyStatus.textContent = '✓ Key accepted (length valid)';
   } else {
     keyStatus.className = 'key-status err';
-    keyStatus.textContent = '⚠ Key should start with "AIza..."';
+    keyStatus.textContent = '⚠ Key seems too short';
   }
 }
 
@@ -563,17 +563,19 @@ goBtn.addEventListener('click', async () => {
       generationConfig: { temperature: 0.1, maxOutputTokens: 8192 }
     };
 
-    const res = await fetch(
-      'https://cors-anywhere.herokuapp.com/https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey
-        },
-        body: JSON.stringify(payload)
-      }
-    );
+    // Use CORS proxy for browser requests
+    const proxyUrl = 'https://api.allorigins.win/raw?url=';
+    const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent';
+    const endpoint = proxyUrl + encodeURIComponent(apiUrl);
+
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey
+      },
+      body: JSON.stringify(payload)
+    });
 
     if (!res.ok) {
       let msg = `API error ${res.status}`;
